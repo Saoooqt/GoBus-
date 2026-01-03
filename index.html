@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GoBus - Sistem Pemesanan Tiket</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f0f4f8;
+        margin: 0;
+        padding: 0;
+      }
+
+      /* LOGIN PAGE */
+      #loginPage {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .login-container {
+        background: #fff;
+        padding: 25px;
+        width: 350px;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      }
+      label {
+        font-weight: bold;
+      }
+      input,
+      select {
+        width: 100%;
+        margin: 8px 0 15px 0;
+        box-sizing: border-box;
+        height: 44px;
+        padding: 10px 42px 10px 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+      }
+      button {
+        width: 100%;
+        padding: 10px;
+        background: #0078d7;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      button:hover {
+        background: #005bb5;
+      }
+
+      /* PASSWORD SHOW ICON */
+      .password-wrapper {
+        position: relative;
+        width: 100%;
+      }
+
+      .password-wrapper input {
+        height: 44px;
+        padding: 10px 42px 10px 10px; /* ruang icon */
+        box-sizing: border-box;
+      }
+      .eye-icon {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+        opacity: 0.7;
+      }
+
+      .eye-icon:hover {
+        opacity: 1;
+      }
+
+      /* BOOKING */
+      #bookingPage {
+        display: none;
+        width: 90%;
+        max-width: 700px;
+        margin: 30px auto;
+        background: #fff;
+        padding: 25px;
+        border-radius: 12px;
+      }
+
+      header {
+        display: none;
+        background: #0078d7;
+        color: white;
+        padding: 15px;
+        text-align: center;
+      }
+
+      .seat-map {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .seat {
+        width: 45px;
+        height: 45px;
+        background: #d6e4f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .selected {
+        background: #0078d7;
+        color: white;
+      }
+      .booked {
+        background: #777;
+        color: white;
+        cursor: not-allowed;
+      }
+
+      /* PAYMENT */
+      #paymentPage,
+      #successPage {
+        display: none;
+        text-align: center;
+        padding: 25px;
+      }
+      #qrBox {
+        width: 250px;
+        margin: 20px auto;
+        padding: 15px;
+        background: white;
+        border-radius: 10px;
+      }
+      #qrBox img {
+        width: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- LOGIN -->
+    <div id="loginPage">
+      <div class="login-container">
+        <h2>Login Pelanggan</h2>
+
+        <label>Email</label>
+        <input type="email" id="email" />
+
+        <label>Password</label>
+        <div class="password-wrapper">
+          <input type="password" id="password" />
+        </div>
+
+        <button onclick="login()">Masuk</button>
+        <p id="loginMsg" style="color: red; text-align: center"></p>
+      </div>
+    </div>
+
+    <!-- HEADER -->
+    <header id="bookingHeader">ID Pelanggan: <span id="showID"></span></header>
+
+    <!-- BOOKING PAGE -->
+    <div id="bookingPage">
+      <label>Nama Pemesan:</label>
+      <input type="text" id="namaPemesan" placeholder="Masukkan nama" />
+
+      <label>Kota Asal:</label>
+      <select id="from">
+        <option value="">-- Pilih Asal --</option>
+        <option>Langsa</option>
+        <option>Lhokseumawe</option>
+        <option>Bireuen</option>
+        <option>Sigli</option>
+        <option>Banda Aceh</option>
+      </select>
+
+      <label>Kota Tujuan:</label>
+      <select id="to">
+        <option value="">-- Pilih Tujuan --</option>
+        <option>Langsa</option>
+        <option>Lhokseumawe</option>
+        <option>Bireuen</option>
+        <option>Sigli</option>
+        <option>Banda Aceh</option>
+      </select>
+
+      <label>Tanggal Keberangkatan:</label>
+      <input type="date" id="tanggal" />
+
+      <label>Jam Keberangkatan:</label>
+      <input type="time" id="jam" step="60" />
+
+      <label>Pilih Kursi:</label>
+      <div class="seat-map" id="seatMap"></div>
+
+      <p
+        id="hargaTiket"
+        style="
+          font-size: 18px;
+          font-weight: bold;
+          margin-top: 10px;
+          color: #0078d7;
+        "
+      ></p>
+
+      <button onclick="pesan()">Pesan Sekarang</button>
+    </div>
+
+    <!-- PAYMENT -->
+    <div id="paymentPage">
+      <h2>💳 Pembayaran Tiket</h2>
+      <p>Total Harga: <strong id="hargaFinal"></strong></p>
+
+      <div id="qrBox">
+        <p>Scan untuk membayar</p>
+        <img id="qrImage" src="" />
+      </div>
+
+      <button onclick="finish()">Konfirmasi Pembayaran</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="successPage">
+      <h2>🎉 Pemesanan Berhasil!</h2>
+      <button onclick="openTicket()">Lihat Tiket Digital</button>
+      <br /><br />
+      <button onclick="location.reload()">Pesan Lagi</button>
+    </div>
+
+    <script>
+      // ================= LOGIN =================
+      function login() {
+        const email = document.getElementById("email").value.trim();
+        const pass = document.getElementById("password").value.trim();
+        const msg = document.getElementById("loginMsg");
+
+        if (!email || !pass) {
+          msg.innerText = "Email dan password wajib diisi";
+          return;
+        }
+
+        const id = btoa(email + pass)
+          .replace(/=/g, "")
+          .slice(0, 12);
+        localStorage.setItem("idPelanggan", id);
+
+        document.getElementById("loginPage").style.display = "none";
+        document.getElementById("bookingPage").style.display = "block";
+        document.getElementById("bookingHeader").style.display = "block";
+        document.getElementById("showID").innerText = id;
+
+        renderSeats(); // ✅ PENTING
+      }
+
+      // ================= SEAT =================
+      const seatMap = document.getElementById("seatMap");
+      const bookedSeats = [3, 9, 12]; // contoh kursi terisi
+
+      function renderSeats() {
+        seatMap.innerHTML = "";
+
+        for (let i = 1; i <= 20; i++) {
+          const seat = document.createElement("div");
+          seat.className = "seat";
+          seat.innerText = i;
+
+          if (bookedSeats.includes(i)) {
+            seat.classList.add("booked");
+          } else {
+            seat.onclick = () => {
+              document
+                .querySelectorAll(".seat")
+                .forEach((s) => s.classList.remove("selected"));
+              seat.classList.add("selected");
+            };
+          }
+
+          seatMap.appendChild(seat);
+        }
+      }
+
+      // ================= HARGA =================
+      const hargaRute = {
+        "Langsa-Lhokseumawe": 70000,
+        "Langsa-Bireuen": 90000,
+        "Langsa-Sigli": 110000,
+        "Langsa-Banda Aceh": 130000,
+        "Lhokseumawe-Langsa": 70000,
+        "Lhokseumawe-Bireuen": 60000,
+        "Lhokseumawe-Sigli": 90000,
+        "Lhokseumawe-Banda Aceh": 110000,
+        "Bireuen-Langsa": 90000,
+        "Bireuen-Lhokseumawe": 60000,
+        "Bireuen-Sigli": 70000,
+        "Bireuen-Banda Aceh": 90000,
+        "Sigli-Langsa": 110000,
+        "Sigli-Lhokseumawe": 90000,
+        "Sigli-Bireuen": 70000,
+        "Sigli-Banda Aceh": 60000,
+        "Banda Aceh-Langsa": 130000,
+        "Banda Aceh-Lhokseumawe": 110000,
+        "Banda Aceh-Bireuen": 90000,
+        "Banda Aceh-Sigli": 60000,
+      };
+
+      document.getElementById("from").onchange = hitungHarga;
+      document.getElementById("to").onchange = hitungHarga;
+
+      let hargaFix = 0;
+
+      function hitungHarga() {
+        const from = document.getElementById("from").value;
+        const to = document.getElementById("to").value;
+
+        if (from === to && from !== "") {
+          document.getElementById("hargaTiket").innerText =
+            "Kota asal dan tujuan tidak boleh sama";
+          hargaFix = 0;
+          return;
+        }
+
+        const key = `${from}-${to}`;
+        if (hargaRute[key]) {
+          hargaFix = hargaRute[key];
+          document.getElementById("hargaTiket").innerText =
+            "Harga: Rp " + hargaFix.toLocaleString();
+        }
+      }
+
+      // ================= PESAN =================
+      function pesan() {
+        const nama = document.getElementById("namaPemesan").value.trim();
+        const tanggal = document.getElementById("tanggal").value;
+        const jam = document.getElementById("jam").value;
+        const kursi = document.querySelector(".seat.selected");
+
+        if (!nama || !tanggal || !jam || !kursi || hargaFix === 0) {
+          alert("Lengkapi semua data dengan benar!");
+          return;
+        }
+
+        const qrData = `GoBus|${nama}|${hargaFix}`;
+        document.getElementById("qrImage").src =
+          "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" +
+          encodeURIComponent(qrData);
+
+        localStorage.setItem(
+          "ticketData",
+          JSON.stringify({
+            nama,
+            id: localStorage.getItem("idPelanggan"),
+            from: from.value,
+            to: to.value,
+            tanggal,
+            jam,
+            kursi: kursi.innerText,
+            harga: hargaFix,
+          })
+        );
+
+        document.getElementById("bookingPage").style.display = "none";
+        document.getElementById("paymentPage").style.display = "block";
+        document.getElementById("hargaFinal").innerText =
+          "Rp " + hargaFix.toLocaleString();
+      }
+
+      // ================= FINISH =================
+      function finish() {
+        document.getElementById("paymentPage").style.display = "none";
+        document.getElementById("successPage").style.display = "block";
+      }
+
+      // ================= TIKET =================
+      function openTicket() {
+        const data = JSON.parse(localStorage.getItem("ticketData"));
+        if (!data) return alert("Data tiket tidak ditemukan");
+
+        const w = window.open();
+        w.document.write(`
+      <h2>Tiket GoBus</h2>
+      <p>Nama: ${data.nama}</p>
+      <p>ID: ${data.id}</p>
+      <p>Rute: ${data.from} → ${data.to}</p>
+      <p>Tanggal: ${data.tanggal}</p>
+      <p>Jam: ${data.jam}</p>
+      <p>Kursi: ${data.kursi}</p>
+      <p>Harga: Rp ${data.harga.toLocaleString()}</p>
+    `);
+      }
+    </script>
+  </body>
+</html>
